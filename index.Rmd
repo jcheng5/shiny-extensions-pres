@@ -3,8 +3,15 @@ title: 'Shiny: What it is, how to extend it'
 author: Joe Cheng
 date: March 4, 2014
 output:
-  ioslides_presentation
+  ioslides_presentation:
+    widescreen: true
 ---
+
+```{r echo=FALSE}
+library(shiny)
+library(knitr)
+opts_chunk$set(comment=NA)
+```
 
 ## What is Shiny?
 
@@ -28,6 +35,143 @@ output:
 
 ## Complicated example: SuperZIP
 
+## Extending Shiny with JavaScript
+
+- Today we'll focus on making a *custom output widget binding* (inputs are similar)
+- Not easy to write, but once written, very easy to use and reuse
+- Our starting point will be the [Simple Line Chart](http://nvd3.org/ghpages/line.html) demo from the JS charting library [NVD3](http://nvd3.org/). We'll create a simple Shiny interface for creating similar charts
+- If you can't follow along, no worries--the example code is online at https://github.com/jcheng5/shiny-js-examples
+
+## Line chart example: The goal
+
+We want to be able to write this:
+
+ui.R (partial):
+```r
+lineChartOutput("mychart")
+```
+
+server.R (partial):
+```r
+output$mychart <- renderLineChart({
+  # Return a data frame. Each column will be a series in the line chart.
+  data.frame(
+    Sine = sin(1:100/10 + input$sinePhase * pi/180) * input$sineAmplitude,
+    Cosine = 0.5 * cos(1:100/10),
+    "Sine 2" = sin(1:100/10) * 0.25 + 0.5
+  )
+})
+```
+
+## Step 1: Implement the R HTML building function
+
+<!--
+```{r lineChartOutput, results="hide"}
+# To be called from ui.R
+lineChartOutput <- function(inputId, width="100%", height="400px") {
+  tagList(
+    # Include CSS/JS dependencies.
+    singleton(tags$head(
+      tags$script(src="d3/d3.v3.min.js"),
+      # ... other JS/CSS dependencies ...
+      tags$script(src="linechart-binding.js")
+    )),
+    # Generate the div that will contain the chart.
+    div(id=inputId, class="nvd3-linechart",
+      style=sprintf("width: %s; height: %s;", width, height),
+      tag("svg", list())
+    )
+  )
+}
+```
+-->
+
+```{r}
+lineChartOutput("mychart", width="800px", height="400px")
+```
+
+- Give R functions concise and declarative signatures
+- Have the function body generate clean, semantic HTML markup
+- Avoid coding up behaviors, i.e. writing JavaScript, in this function--we'll do that elsewhere
+
+
+## Step 1: Implement the R HTML building function
+
+```{r}
+<<lineChartOutput>>
+```
+
+## Step 2: Write an output binding
+
+- An output binding is a JavaScript object you create and pass to Shiny that:
+    - `find()`: Knows what DOM elements it should apply to
+    - `renderValue()`: Knows how to take data from R, and a DOM node, and render the data onto the DOM node
+
+```javascript
+// First create a generic output binding instance, then overwrite
+// specific methods whose behavior we want to change.
+var binding = new Shiny.OutputBinding();
+```
+
+## Step 2: Write an output binding
+
+```javascript
+binding.find = function(scope) {
+  // For the given scope, return the set of elements that belong to
+  // this binding.
+  return $(scope).find(".nvd3-linechart");
+};
+
+binding.renderValue = function(el, data) {
+  // This function will be called every time we receive new output
+  // values for a line chart from Shiny. The "el" argument is the
+  // div for this particular chart.
+
+  [basically the original JS example code goes here]
+};
+```
+
+## Step 2: Write an output binding
+
+```javascript
+// Tell Shiny about our new output binding
+Shiny.outputBindings.register(binding, "shinyjsexamples.nvd3-linechart");
+```
+
+## Step 3: Write a render function (if necessary)
+
+Converts R output values from user to the format the binding expects
+
+```{r eval=FALSE}
+renderLineChart <- function(expr, env=parent.frame(), quoted=FALSE) {
+  # This piece of boilerplate converts the expression `expr` into a
+  # function called `func`.
+  installExprFunction(expr, "func", env, quoted)
+
+  function() {
+    dataframe <- func()
+    ## <b>
+    # Data frame in, d3-style nested lists out
+    mapply(function(col, name) {
+      values <- mapply(function(val, i) {
+        list(x = i, y = val)
+      }, col, 1:nrow(dataframe), SIMPLIFY=FALSE, USE.NAMES=FALSE)
+      list(key = name, values = values)
+    }, dataframe, names(dataframe), SIMPLIFY=FALSE, USE.NAMES=FALSE)
+    ## </b>
+  }
+}
+```
+
+## Resources
+
+- [Official Shiny tutorial](https://rstudio.github.io/shiny/tutorial/) - Includes sections on custom input/output bindings
+- [jcheng5/shiny-js-examples](https://github.com/jcheng5/shiny-js-examples) - Includes today's example, plus a custom input one
+- [jcheng5/leaflet-shiny](https://github.com/jcheng5/leaflet-shiny) - Rough draft of an interactive mapping binding
+- [rstudio/shiny-incubator](https://github.com/rstudio/shiny-incubator)
+- [shiny-discuss](https://groups.google.com/group/shiny-discuss) - Mailing list
+
+<!--
 ## Shiny UI code is just HTML in disguise
 
 ```{r echo=FALSE}
@@ -63,3 +207,4 @@ The results:
 mainPanel("Hello")
 ```
 
+-->

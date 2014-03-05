@@ -35,6 +35,17 @@ opts_chunk$set(comment=NA)
 
 ## Complicated example: SuperZIP
 
+## Deploying apps
+
+- Shiny Server Pro is our solution for on-premises deployment of Shiny applications
+- End users can access your apps with only a web browser--no R installation required (except on the server, of course)
+- Automatically launches and manages R processes to serve your Shiny apps
+- Supports authentication and TLS/SSL
+- Includes admin dashboard with both realtime and historical performance data
+- Can use multiple R processes per app
+- Supported server platforms: RedHat, Ubuntu
+- More details at http://rstudio.com/shiny/server/
+
 ## Extending Shiny with JavaScript
 
 - Today we'll focus on making a *custom output widget binding* (inputs are similar)

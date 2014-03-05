@@ -1,0 +1,65 @@
+---
+title: 'Shiny: What it is, how to extend it'
+author: Joe Cheng
+date: March 4, 2014
+output:
+  ioslides_presentation
+---
+
+## What is Shiny?
+
+- A framework for creating web applications using R
+- Shiny is easy to learn and use even if you know zero HTML/JS/CSS...
+- ...and it's very flexible and powerful if you do know those languages
+- Interoperable with existing JavaScript frameworks and libraries
+
+## Simple example: kmeans
+
+## How did that work?
+
+- Client side (ui.R):
+    - Contains R code that looks like a declarative UI
+    - It's actually all just HTML generating functions
+    - Shiny includes a useful set of functions for layout, input, and output; but nothing magical, you can write your own
+- Server side (server.R):
+    - Contains R code that does data manipulation and visualization
+    - Assign expressions to the `output` object in order to direct results and visualizations to the right place on the web page
+    - Uses a *reactive programming* library to do partial recalculation (it's much more pragmatic and less magical than it sounds)
+
+## Complicated example: SuperZIP
+
+## Shiny UI code is just HTML in disguise
+
+```{r echo=FALSE}
+library(shiny)
+knitr::opts_chunk$set(comment=NA)
+```
+```{r}
+div(id="myDiv", style="font-weight: bold",
+  a(href="mailto:joe@rstudio.com", "joe@rstudio.com")
+)
+sliderInput("n", "Number of simulations",
+  min=10, max=10000, value=100)
+```
+
+## Shiny UI code is just HTML in disguise
+
+```{r}
+pageWithSidebar(
+  headerPanel("Title"),
+  sidebarPanel(),
+  mainPanel()
+)
+```
+
+## Nothing special about built-in inputs
+
+The implementation of `mainPanel`:
+```{r}
+mainPanel
+```
+The results:
+```{r}
+mainPanel("Hello")
+```
+
